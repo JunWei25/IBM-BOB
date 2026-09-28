@@ -462,95 +462,69 @@ function ConditionSelect<T extends string>({
 
 // Option card — richer visual per commute mode
 function OptionCard({
-  mode,
-  isRecommended,
-  isAlternative,
+  mode, isRecommended, isAlternative,
 }: {
   mode: ModeResult;
   isRecommended: boolean;
   isAlternative: boolean;
+  maxTravelMinutes: number;  // accepted but unused — kept for API compat
 }) {
-  const borderClass = isRecommended
-    ? "border-2 border-green-400 bg-green-50"
-    : isAlternative
-    ? "border border-blue-300 bg-blue-50"
-    : !mode.eligible
-    ? "border border-gray-200 bg-gray-50 opacity-60"
-    : "border border-gray-200 bg-white";
-
-  const co2Bar = mode.savingsPct > 0 ? mode.savingsPct : 0;
-
+  const co2Bar = Math.max(0, mode.savingsPct);
+  const boxStyle: React.CSSProperties = {
+    borderRadius: "var(--r-xl)", padding: "18px 16px",
+    border: isRecommended ? "2px solid var(--green-400)" : isAlternative ? "1.5px solid var(--blue-200)" : !mode.eligible ? "1px solid var(--border)" : "1px solid var(--border-dim)",
+    background: isRecommended ? "linear-gradient(145deg, var(--green-50) 0%, var(--surface) 100%)" : isAlternative ? "var(--blue-50)" : !mode.eligible ? "var(--surface-alt)" : "var(--surface)",
+    opacity: !mode.eligible ? 0.65 : 1,
+    display: "flex", flexDirection: "column", gap: 12,
+    boxShadow: isRecommended ? "0 4px 16px rgba(45,158,74,0.14)" : "var(--shadow-sm)",
+  };
   return (
-    <div className={`rounded-xl p-4 space-y-3 ${borderClass}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{mode.emoji}</span>
+    <div style={boxStyle}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 26, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--r-md)", background: isRecommended ? "var(--green-100)" : "var(--surface-alt)", flexShrink: 0 }}>{mode.emoji}</span>
           <div>
-            <p className={`font-semibold text-sm ${isRecommended ? "text-green-800" : "text-gray-800"}`}>
-              {mode.label}
-            </p>
-            {isRecommended && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                ✅ Recommended
-              </span>
-            )}
-            {isAlternative && !isRecommended && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                ↗ Alternative
-              </span>
-            )}
-            {!mode.eligible && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                🚫 Excluded
-              </span>
-            )}
+            <p style={{ fontWeight: 700, fontSize: 14, color: isRecommended ? "var(--green-800)" : "var(--text)", margin: "0 0 4px" }}>{mode.label}</p>
+            {isRecommended && <span style={{ padding: "2px 8px", borderRadius: "var(--r-full)", fontSize: 10, fontWeight: 700, background: "var(--green-500)", color: "#fff" }}>✅ Recommended</span>}
+            {isAlternative && !isRecommended && <span style={{ padding: "2px 8px", borderRadius: "var(--r-full)", fontSize: 10, fontWeight: 700, background: "var(--blue-200)", color: "var(--blue-700)" }}>↗ Alternative</span>}
+            {!mode.eligible && <span style={{ padding: "2px 8px", borderRadius: "var(--r-full)", fontSize: 10, fontWeight: 700, background: "var(--red-50)", color: "var(--red-700)", border: "1px solid var(--red-200)" }}>🚫 Excluded</span>}
           </div>
         </div>
         {mode.eligible && <ScoreDot score={mode.score} />}
       </div>
-
-      {/* Stats */}
       {mode.eligible ? (
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
             { label: "Travel time", value: `~${mode.estimatedMinutes} min`, warn: !mode.withinTimeLimit },
             { label: "CO₂ / trip",  value: `${mode.co2PerTrip}g`,          warn: false },
             { label: "Walking",     value: mode.key === "walking" ? `${mode.estimatedMinutes} min` : mode.walkingMinutes > 0 ? `~${mode.walkingMinutes} min` : "Minimal", warn: !mode.withinWalkLimit },
             { label: "vs. driving", value: mode.key === "solo-car" ? "baseline" : `${mode.savingsPct}% less`, warn: false },
-          ].map((s) => (
-            <div key={s.label} className="bg-white rounded-lg p-2 text-center border border-gray-100">
-              <p className="text-gray-400 mb-0.5">{s.label}</p>
-              <p className={`font-bold ${s.warn ? "text-orange-600" : isRecommended ? "text-green-700" : "text-gray-700"}`}>
+          ].map(s => (
+            <div key={s.label} style={{ background: "var(--surface)", borderRadius: "var(--r-sm)", padding: "8px 10px", textAlign: "center", border: "1px solid var(--border-dim)" }}>
+              <p style={{ fontSize: 10, color: "var(--text-dim)", margin: "0 0 3px", fontWeight: 500 }}>{s.label}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: s.warn ? "#c2410c" : isRecommended ? "var(--green-600)" : "var(--text)" }}>
                 {s.value}
-                {s.warn && <span className="block text-orange-500 font-normal text-xs">over limit</span>}
+                {s.warn && <span style={{ display: "block", fontSize: 10, color: "#c2410c", fontWeight: 400 }}>over limit</span>}
               </p>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-red-600 bg-red-50 rounded-lg p-2">{mode.safetyNote}</p>
+        <p style={{ fontSize: 12, color: "var(--red-700)", background: "var(--red-50)", borderRadius: "var(--r-sm)", padding: "8px 12px", margin: 0, border: "1px solid var(--red-200)" }}>{mode.safetyNote}</p>
       )}
-
-      {/* CO₂ bar */}
       {mode.eligible && mode.key !== "solo-car" && (
         <div>
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-dim)", marginBottom: 4 }}>
             <span>CO₂ savings vs. driving</span>
-            <span className="font-bold text-green-600">{co2Bar}%</span>
+            <span style={{ fontWeight: 700, color: "var(--green-600)" }}>{co2Bar}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div
-              className="bg-green-500 h-1.5 rounded-full transition-all"
-              style={{ width: `${co2Bar}%` }}
-            />
+          <div style={{ height: 5, background: "var(--border)", borderRadius: 3 }}>
+            <div style={{ height: "100%", borderRadius: 3, width: `${co2Bar}%`, background: "linear-gradient(to right, var(--green-400), var(--green-600))", transition: "width 0.4s ease" }} />
           </div>
         </div>
       )}
-
-      {/* Warnings */}
       {mode.warnings.slice(0, 1).map((w) => (
-        <p key={w} className="text-xs text-yellow-700 bg-yellow-50 rounded px-2 py-1">{w}</p>
+        <p key={w} style={{ fontSize: 11, color: "var(--amber-700)", background: "var(--amber-50)", border: "1px solid var(--amber-200)", borderRadius: "var(--r-sm)", padding: "6px 10px", margin: 0 }}>{w}</p>
       ))}
     </div>
   );
@@ -651,32 +625,50 @@ export default function Home() {
       )
     : null;
 
+  /* ─ shared CSS-in-JS shortcuts ─ */
+  const card: React.CSSProperties = {
+    background: "var(--surface)", border: "1px solid var(--border-dim)",
+    borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-md)", overflow: "hidden",
+  };
+  const sec: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+    textTransform: "uppercase" as const, color: "var(--text-muted)",
+    marginBottom: 14, display: "flex", alignItems: "center", gap: 8,
+  };
+  const pill = (bg: string, fg: string, border: string): React.CSSProperties => ({
+    padding: "4px 11px", borderRadius: "var(--r-full)", fontSize: 11, fontWeight: 600,
+    background: bg, color: fg, border: `1px solid ${border}`, display: "inline-block",
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div style={{ minHeight: "100vh", background: "var(--bg)", padding: "24px 16px 56px" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "radial-gradient(ellipse 80% 55% at 50% -5%, rgba(45,158,74,0.10) 0%, transparent 65%)" }} />
+      <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1 }}>
 
         {/* ── Header ── */}
-        <div className="text-center space-y-2 py-6">
-          <h1 className="text-4xl font-bold text-green-800">🌿 Sustainable Commute Planner</h1>
-          <p className="text-green-700 text-lg">Condition-aware, AI-assisted commute decision support</p>
-          <div className="flex justify-center gap-2 mt-2 flex-wrap">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">IPCC AR6 Data</span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Safety-First Scoring</span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Built with IBM Bob</span>
+        <div style={{ textAlign: "center", padding: "36px 0 32px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <span style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, var(--green-500) 0%, var(--teal) 100%)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 14px rgba(45,158,74,0.32)" }}>🌿</span>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--green-800)", margin: 0, letterSpacing: "-0.5px" }}>Sustainable Commute Planner</h1>
           </div>
-          <p className="text-sm text-gray-500 max-w-2xl mx-auto mt-2">
+          <p style={{ fontSize: 15, color: "var(--text-muted)", margin: "0 0 16px" }}>Condition-aware, AI-assisted commute decision support</p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            <span style={pill("var(--green-50)", "var(--green-700)", "var(--green-200)")}>IPCC AR6 Data</span>
+            <span style={pill("var(--blue-50)", "var(--blue-700)", "var(--blue-200)")}>Safety-First Scoring</span>
+            <span style={pill("#f5f0ff", "#6d28d9", "#ddd6fe")}>Built with IBM Bob</span>
+          </div>
+          <p style={{ fontSize: 14, color: "var(--text-dim)", maxWidth: 600, margin: "0 auto", lineHeight: 1.7 }}>
             The greenest option isn&apos;t always practical. This planner combines estimated CO₂, weather, travel time, and your constraints to recommend a lower-carbon commute that actually fits your situation.
           </p>
         </div>
 
         {/* ── Input card ── */}
-        <Card className="border border-green-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-green-800">📍 Your Journey</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-
-            {/* Origin / Destination + Map */}
+        <div style={{ ...card, marginBottom: 20 }}>
+          <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--border-dim)", background: "linear-gradient(to right, var(--green-50), var(--surface))", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 32, height: 32, borderRadius: "var(--r-sm)", flexShrink: 0, background: "var(--green-500)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📍</span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: "var(--green-800)" }}>Your Journey</span>
+          </div>
+          <div style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 22 }}>
             <LocationPicker
               origin={origin}
               destination={destination}
@@ -685,589 +677,413 @@ export default function Home() {
               onDistanceChange={(km) => setDistance(km)}
             />
 
-            {/* Distance (read-only display; set automatically by LocationPicker) */}
-            <div className="flex items-center gap-3 text-sm text-gray-700">
-              <span className="font-medium">Distance (one way):</span>
-              <span className="text-green-700 font-bold">{distance} km</span>
-              <span className="text-gray-400 text-xs">
-                {distance <= WALKING_MAX_KM ? "— walkable" : distance <= CYCLING_MAX_KM ? "— cycleable" : "— transit/car route"}
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderRadius: "var(--r-md)", background: "var(--green-50)", border: "1px solid var(--green-100)" }}>
+              <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Distance (one way)</span>
+              <span style={{ fontWeight: 800, fontSize: 17, color: "var(--green-600)" }}>{distance} km</span>
+              <span style={{ fontSize: 12, color: "var(--text-dim)" }}>{distance <= WALKING_MAX_KM ? "— walkable" : distance <= CYCLING_MAX_KM ? "— cycleable" : "— transit / car route"}</span>
             </div>
 
-            <hr className="border-green-100" />
+            <div style={{ height: 1, background: "var(--border-dim)" }} />
 
-            {/* User preferences */}
-            <div className="space-y-4">
-              <p className="text-sm font-semibold text-gray-700">🎯 Your Preferences</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p style={sec}><span>🎯</span> Your Preferences</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Departure time
-                  </label>
-                  <input
-                    type="time"
-                    value={departureTime}
-                    onChange={(e) => setDepartureTime(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-                  />
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "var(--text-muted)" }}>Departure time</label>
+                  <input type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} className="input-premium" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Max travel time: <span className="font-bold text-green-700">{maxTravelMinutes} min</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={10} max={120} step={5}
-                    value={maxTravelMinutes}
-                    onChange={(e) => setMaxTravelMinutes(Number(e.target.value))}
-                    className="w-full accent-green-600"
-                  />
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "var(--text-muted)" }}>Max travel time: <span style={{ color: "var(--green-600)", fontWeight: 800 }}>{maxTravelMinutes} min</span></label>
+                  <input type="range" min={10} max={120} step={5} value={maxTravelMinutes} onChange={(e) => setMaxTravelMinutes(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--green-500)" }} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Max walking: <span className="font-bold text-green-700">{maxWalkingMinutes} min</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={2} max={30} step={1}
-                    value={maxWalkingMinutes}
-                    onChange={(e) => setMaxWalkingMinutes(Number(e.target.value))}
-                    className="w-full accent-green-600"
-                  />
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "var(--text-muted)" }}>Max walking: <span style={{ color: "var(--green-600)", fontWeight: 800 }}>{maxWalkingMinutes} min</span></label>
+                  <input type="range" min={2} max={30} step={1} value={maxWalkingMinutes} onChange={(e) => setMaxWalkingMinutes(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--green-500)" }} />
                 </div>
-                <div className="flex items-center gap-3 pt-4">
-                  <input
-                    type="checkbox"
-                    id="comfort-check"
-                    checked={comfortPriority}
-                    onChange={(e) => setComfortPriority(e.target.checked)}
-                    className="w-4 h-4 accent-green-600"
-                  />
-                  <label htmlFor="comfort-check" className="text-xs text-gray-600 cursor-pointer">
-                    Prefer comfort / cost over active modes
-                  </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 20 }}>
+                  <input type="checkbox" id="comfort-check" checked={comfortPriority} onChange={(e) => setComfortPriority(e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--green-500)", cursor: "pointer" }} />
+                  <label htmlFor="comfort-check" style={{ fontSize: 13, color: "var(--text-muted)", cursor: "pointer" }}>Prefer comfort / cost over active modes</label>
                 </div>
               </div>
-
-              <ConditionSelect
-                label="Sustainability preference"
-                value={sustainabilityPref}
-                onChange={setSustainabilityPref}
-                options={sustainabilityOptions}
-              />
+              <div style={{ marginTop: 16 }}>
+                <ConditionSelect label="Sustainability preference" value={sustainabilityPref} onChange={setSustainabilityPref} options={sustainabilityOptions} />
+              </div>
             </div>
 
-            <hr className="border-green-100" />
+            <div style={{ height: 1, background: "var(--border-dim)" }} />
 
-            {/* Conditions */}
-            <div className="space-y-4">
-              <p className="text-sm font-semibold text-gray-700">⚡ Today&apos;s Conditions</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p style={sec}><span>⚡</span> Today&apos;s Conditions</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
                 <ConditionSelect label="Weather"  value={weather}  onChange={setWeather}  options={weatherOptions}  />
                 <ConditionSelect label="Traffic"  value={traffic}  onChange={setTraffic}  options={trafficOptions}  />
                 <ConditionSelect label="Flooding" value={flooding} onChange={setFlooding} options={floodingOptions} />
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  User-reported conditions <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <TextArea
-                  placeholder='e.g. "Flooding reported near Jalan X" or "LRT service normal"'
-                  value={communityNote}
-                  onChange={(e) => setCommunityNote(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:border-green-500 focus:outline-none"
-                  rows={2}
-                />
+              <div style={{ marginTop: 16 }}>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "var(--text-muted)" }}>Community-reported conditions <span style={{ fontWeight: 400, textTransform: "none" as const, letterSpacing: 0 }}>(optional)</span></label>
+                <textarea placeholder='e.g. "Flooding reported near Jalan X" or "LRT service normal"' value={communityNote} onChange={(e) => setCommunityNote(e.target.value)} rows={2} className="input-premium" style={{ resize: "none", fontFamily: "inherit" }} />
               </div>
             </div>
 
-            <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl text-base"
-              onPress={handlePlan}
-              isDisabled={!origin || !destination}
-            >
-              🌱 Analyse My Commute Options
-            </Button>
-          </CardContent>
-        </Card>
+            <button
+              onClick={handlePlan}
+              disabled={!origin || !destination}
+              style={{
+                width: "100%", padding: "14px 24px", border: "none",
+                background: !origin || !destination ? "var(--border)" : "linear-gradient(135deg, var(--green-500) 0%, var(--teal) 100%)",
+                color: !origin || !destination ? "var(--text-dim)" : "#fff",
+                borderRadius: "var(--r-lg)", fontSize: 15, fontWeight: 700,
+                cursor: !origin || !destination ? "not-allowed" : "pointer",
+                boxShadow: !origin || !destination ? "none" : "0 4px 16px rgba(45,158,74,0.30)",
+                transition: "all 0.2s", letterSpacing: "0.02em",
+              }}
+            >🌱 Analyse My Commute Options</button>
+          </div>
+        </div>
 
         {/* ── Results ── */}
         {plan && (
-          <div id="results-section" className="space-y-6">
-            {/* Safety alerts */}
+          <div id="results-section" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
             {plan.safetyAlerts.length > 0 && (
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {plan.safetyAlerts.map((alert) => (
-                  <div key={alert} className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">
-                    <span className="text-lg leading-none">⚠️</span>
-                    <span>{alert}</span>
+                  <div key={alert} style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "var(--red-50)", border: "1px solid var(--red-200)", borderRadius: "var(--r-lg)", padding: "14px 18px", fontSize: 14, color: "var(--red-700)" }}>
+                    <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>⚠️</span><span>{alert}</span>
                   </div>
                 ))}
               </div>
             )}
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-gray-200">
+            <div style={{ display: "flex", gap: 4, borderBottom: "1.5px solid var(--border-dim)" }}>
               {(["options", "details", "enterprise"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab
-                      ? "border-green-600 text-green-700"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {tab === "options"     ? "📊 Commute Options"     : null}
-                  {tab === "details"     ? "🔍 Analysis Details"    : null}
-                  {tab === "enterprise"  ? "🏢 Enterprise Impact"   : null}
+                <button key={tab} type="button" onClick={() => setActiveTab(tab)} style={{ padding: "10px 18px", fontSize: 13, fontWeight: activeTab === tab ? 700 : 500, border: "none", background: "transparent", cursor: "pointer", color: activeTab === tab ? "var(--green-700)" : "var(--text-dim)", borderBottom: activeTab === tab ? "2.5px solid var(--green-500)" : "2.5px solid transparent", marginBottom: -1.5, transition: "all 0.15s" }}>
+                  {tab === "options" && "📊 Commute Options"}{tab === "details" && "🔍 Analysis Details"}{tab === "enterprise" && "🏢 Enterprise Impact"}
                 </button>
               ))}
             </div>
 
-            {/* ── TAB: Commute Options ── */}
+            {/* TAB: Commute Options */}
             {activeTab === "options" && (
-              <div className="space-y-5">
-                {/* AI Recommendation banner */}
-                <Card className="border-2 border-green-400 bg-green-50 shadow-sm">
-                  <CardContent className="pt-6 space-y-4">
-                    <div>
-                      <p className="text-xs text-green-600 uppercase font-semibold tracking-wide mb-1">
-                        🤖 Recommendation — based on your preferences
-                      </p>
-                      <h3 className="text-3xl font-bold text-green-800">
-                        {plan.recommended.emoji} {plan.recommended.label}
-                      </h3>
-                      <p className="text-sm text-green-700 mt-1">
-                        {origin} → {destination} • {distance} km
-                        {departureTime && ` • Depart ${departureTime}`}
-                      </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ ...card, border: "1.5px solid var(--green-300)", background: "linear-gradient(140deg, var(--green-50) 0%, var(--surface) 60%)" }}>
+                  <div style={{ padding: "24px 24px 20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+                      <div>
+                        <div style={{ ...pill("var(--green-100)", "var(--green-700)", "var(--green-200)"), marginBottom: 12, fontSize: 10, letterSpacing: "0.07em" }}>🤖 RECOMMENDATION — BASED ON YOUR PREFERENCES</div>
+                        <h3 style={{ fontSize: 32, fontWeight: 800, color: "var(--green-800)", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{plan.recommended.emoji} {plan.recommended.label}</h3>
+                        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{origin.split(",")[0]} → {destination.split(",")[0]} · {distance} km{departureTime && ` · Depart ${departureTime}`}</p>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ padding: "10px 22px", borderRadius: "var(--r-lg)", background: "linear-gradient(135deg, var(--green-500), var(--teal))", color: "#fff", fontSize: 24, fontWeight: 800, boxShadow: "0 4px 16px rgba(45,158,74,0.30)" }}>{plan.recommended.savingsPct}%</div>
+                        <p style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6 }}>less CO₂ vs. driving</p>
+                      </div>
                     </div>
-
-                    {/* AI reasoning */}
-                    <div className="bg-white rounded-xl p-4 border border-green-200 text-sm text-gray-700 leading-relaxed">
-                      <p className="font-semibold text-gray-800 mb-1">💡 Why this recommendation:</p>
-                      <p>{plan.reasoning}</p>
+                    <div style={{ background: "var(--surface)", borderRadius: "var(--r-md)", padding: "14px 18px", border: "1px solid var(--border-dim)", fontSize: 14, color: "var(--text)", lineHeight: 1.7, marginBottom: 16 }}>
+                      <p style={{ fontWeight: 700, marginBottom: 4 }}>💡 Why this recommendation:</p>
+                      <p style={{ margin: 0 }}>{plan.reasoning}</p>
                     </div>
-
-                    {/* Trade-off notes */}
                     {plan.tradeOffNotes.length > 0 && (
-                      <div className="space-y-1">
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
                         {plan.tradeOffNotes.map((note) => (
-                          <p key={note} className="text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
-                            ℹ️ {note}
-                          </p>
+                          <div key={note} style={{ background: "var(--blue-50)", border: "1px solid var(--blue-200)", borderRadius: "var(--r-sm)", padding: "8px 14px", fontSize: 13, color: "var(--blue-700)" }}>ℹ️ {note}</div>
                         ))}
                       </div>
                     )}
-
-                    {/* Key stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
                       {[
-                        { label: "Est. travel time",  value: `~${plan.recommended.estimatedMinutes} min` },
-                        { label: "CO₂ this trip",     value: `${plan.recommended.co2PerTrip}g`           },
-                        { label: "Annual CO₂",        value: `${plan.recommended.co2Annual} kg`           },
-                        { label: "Annual saving",     value: `${Math.round((plan.soloCarCo2Annual - plan.recommended.co2Annual))} kg` },
+                        { label: "Est. travel time", value: `~${plan.recommended.estimatedMinutes} min` },
+                        { label: "CO₂ this trip",    value: `${plan.recommended.co2PerTrip}g`           },
+                        { label: "Annual CO₂",       value: `${plan.recommended.co2Annual} kg`           },
+                        { label: "Annual saving",    value: `${Math.round(plan.soloCarCo2Annual - plan.recommended.co2Annual)} kg` },
                       ].map((s) => (
-                        <div key={s.label} className="bg-white rounded-lg p-3 shadow-sm border border-green-100">
-                          <p className="text-xs text-gray-500">{s.label}</p>
-                          <p className="text-lg font-bold text-green-700">{s.value}</p>
+                        <div key={s.label} style={{ background: "var(--surface)", border: "1px solid var(--border-dim)", borderRadius: "var(--r-md)", padding: "14px 10px", textAlign: "center" }}>
+                          <p style={{ fontSize: 11, color: "var(--text-dim)", margin: "0 0 4px", fontWeight: 500 }}>{s.label}</p>
+                          <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-600)", margin: 0 }}>{s.value}</p>
                         </div>
                       ))}
                     </div>
-
-                    {/* Community note */}
                     {communityNote && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                        📢 Community report: {communityNote}
-                      </div>
+                      <div style={{ marginTop: 14, background: "var(--amber-50)", border: "1px solid var(--amber-200)", borderRadius: "var(--r-md)", padding: "12px 16px", fontSize: 13, color: "var(--amber-700)" }}>📢 <strong>Community report:</strong> {communityNote}</div>
                     )}
-                  </CardContent>
-                </Card>
-
-                {/* Option cards — side by side */}
-                <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-3">📋 All Options Compared</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {plan.modes.sort((a, b) => b.score - a.score).map((m) => (
-                      <OptionCard
-                        key={m.key}
-                        mode={m}
-                        isRecommended={m.key === plan.recommended.key}
-                        isAlternative={plan.alternative !== null && m.key === plan.alternative.key}
-                      />
-                    ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-3">
-                    * Travel time estimates based on typical speeds. CO₂ based on IPCC AR6 / IEA 2023 data.{" "}
-                    <span className="font-medium">All figures are indicative estimates, not real-time data.</span>
-                  </p>
                 </div>
 
-                {/* Weekly planner trigger */}
-                <Card className="border border-green-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-green-800 text-base">📅 Plan Your Week</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-600">Set per-day conditions to get a personalised Mon–Fri recommendation.</p>
-                    <div className="space-y-3">
+                <div>
+                  <p style={sec}><span>📋</span> All Options Compared</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+                    {plan.modes.sort((a, b) => b.score - a.score).map((m) => (
+                      <OptionCard key={m.key} mode={m} isRecommended={m.key === plan.recommended.key} isAlternative={plan.alternative !== null && m.key === plan.alternative.key} maxTravelMinutes={maxTravelMinutes} />
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 10 }}>* Travel time estimates based on typical speeds. CO₂ based on IPCC AR6 / IEA 2023 data. <strong>All figures are indicative estimates, not real-time data.</strong></p>
+                </div>
+
+                {/* Weekly planner */}
+                <div style={card}>
+                  <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--border-dim)", background: "linear-gradient(to right, var(--green-50), var(--surface))", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 32, height: 32, borderRadius: "var(--r-sm)", flexShrink: 0, background: "var(--green-500)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📅</span>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: "var(--green-800)" }}>Plan Your Week</span>
+                  </div>
+                  <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+                    <p style={{ fontSize: 14, color: "var(--text-muted)", margin: 0 }}>Set per-day conditions to get a personalised Mon–Fri recommendation.</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {DAYS.map((day) => (
-                        <div key={day} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-gray-50 rounded-xl p-3">
-                          <div className="font-medium text-sm text-gray-700 pt-1">{day}</div>
+                        <div key={day} style={{ display: "grid", gridTemplateColumns: "100px 1fr 1fr 1fr", gap: 12, alignItems: "end", background: "var(--surface-alt)", border: "1px solid var(--border-dim)", borderRadius: "var(--r-md)", padding: "14px 16px" }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text)", paddingTop: 18 }}>{day}</div>
                           <ConditionSelect label="Weather"  value={dayConditions[day].weather}  onChange={(v) => updateDayCondition(day, "weather",  v)} options={weatherOptions}  />
                           <ConditionSelect label="Traffic"  value={dayConditions[day].traffic}  onChange={(v) => updateDayCondition(day, "traffic",  v)} options={trafficOptions}  />
                           <ConditionSelect label="Flooding" value={dayConditions[day].flooding} onChange={(v) => updateDayCondition(day, "flooding", v)} options={floodingOptions} />
                         </div>
                       ))}
                     </div>
-                    <Button
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl text-base"
-                      onPress={handleWeeklyPlan}
-                    >
-                      📅 Generate Weekly Plan
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <button onClick={handleWeeklyPlan} style={{ width: "100%", padding: "14px 24px", border: "none", background: "linear-gradient(135deg, var(--green-500) 0%, var(--teal) 100%)", color: "#fff", borderRadius: "var(--r-lg)", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(45,158,74,0.28)", transition: "opacity 0.15s", letterSpacing: "0.02em" }}>📅 Generate Weekly Plan</button>
+                  </div>
+                </div>
 
-                {/* Weekly plan results */}
+                {/* Weekly results */}
                 {showWeekly && weeklyPlan && (
-                  <Card className="border border-green-200 shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-green-800">🗓️ Your Weekly Commute Plan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
+                  <div style={card}>
+                    <div style={{ padding: "20px 24px 0" }}><p style={sec}><span>🗓️</span> Your Weekly Commute Plan</p></div>
+                    <div style={{ padding: "0 24px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
                       {weeklyPlan.map(({ day, plan: dp }) => (
-                        <div key={day} className="flex flex-col md:flex-row md:items-start gap-3 bg-gray-50 rounded-xl p-4">
-                          <div className="min-w-[90px] font-semibold text-gray-700">{day}</div>
-                          <div className="text-2xl">{dp.recommended.emoji}</div>
-                          <div className="flex-1 space-y-1">
-                            <p className="font-semibold text-gray-800">{dp.recommended.label}</p>
-                            <p className="text-xs text-gray-500 leading-relaxed">{dp.reasoning}</p>
-                            {dp.safetyAlerts.map((a) => (
-                              <p key={a} className="text-xs text-red-700 bg-red-50 rounded px-2 py-1">{a}</p>
-                            ))}
+                        <div key={day} style={{ display: "flex", alignItems: "flex-start", gap: 14, background: "var(--surface-alt)", border: "1px solid var(--border-dim)", borderRadius: "var(--r-lg)", padding: "16px 18px" }}>
+                          <div style={{ minWidth: 88, fontWeight: 700, fontSize: 13, color: "var(--text)", paddingTop: 2 }}>{day}</div>
+                          <div style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{dp.recommended.emoji}</div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", margin: "0 0 4px" }}>{dp.recommended.label}</p>
+                            <p style={{ fontSize: 12, color: "var(--text-dim)", margin: "0 0 4px", lineHeight: 1.6 }}>{dp.reasoning}</p>
+                            {dp.safetyAlerts.map((a) => <p key={a} style={{ fontSize: 12, color: "var(--red-700)", background: "var(--red-50)", borderRadius: "var(--r-sm)", padding: "4px 10px", margin: "4px 0 0", border: "1px solid var(--red-200)" }}>{a}</p>)}
                           </div>
-                          <div className="text-right text-xs text-gray-500 min-w-[100px]">
-                            <p className="font-medium text-green-700">~{dp.recommended.estimatedMinutes} min</p>
-                            <p className="font-medium text-green-600">{dp.recommended.co2PerTrip}g CO₂</p>
-                            <p>{dp.recommended.savingsPct}% saved</p>
+                          <div style={{ textAlign: "right", minWidth: 90, flexShrink: 0 }}>
+                            <p style={{ fontWeight: 700, fontSize: 13, color: "var(--green-600)", margin: "0 0 2px" }}>~{dp.recommended.estimatedMinutes} min</p>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green-500)", margin: "0 0 2px" }}>{dp.recommended.co2PerTrip}g CO₂</p>
+                            <p style={{ fontSize: 11, color: "var(--text-dim)", margin: 0 }}>{dp.recommended.savingsPct}% saved</p>
                           </div>
                         </div>
                       ))}
-
-                      {/* Weekly CO₂ totals */}
                       {(() => {
                         const totalWeekly = weeklyPlan.reduce((s, { plan: dp }) => s + dp.recommended.co2Weekly / 5, 0);
                         const totalSolo   = weeklyPlan.reduce((s, { plan: dp }) => s + dp.soloCarCo2Weekly / 5, 0);
                         const saving      = Math.round(totalSolo - totalWeekly);
                         return (
-                          <div className="grid grid-cols-3 gap-3 mt-4 text-center">
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 10 }}>
                             {[
-                              { label: "Weekly CO₂ (plan)",    value: `${Math.round(totalWeekly).toLocaleString()}g` },
-                              { label: "Weekly CO₂ (driving)", value: `${Math.round(totalSolo).toLocaleString()}g`   },
-                              { label: "Weekly saving",         value: `${saving.toLocaleString()}g`                },
+                              { label: "Weekly CO₂ (plan)",    value: `${Math.round(totalWeekly).toLocaleString()}g`, color: "var(--green-600)" },
+                              { label: "Weekly CO₂ (driving)", value: `${Math.round(totalSolo).toLocaleString()}g`,   color: "var(--red-700)"   },
+                              { label: "Weekly saving",         value: `${saving.toLocaleString()}g`,                  color: "var(--teal)"      },
                             ].map((s) => (
-                              <div key={s.label} className="bg-white rounded-xl p-3 border border-green-100">
-                                <p className="text-xs text-gray-500">{s.label}</p>
-                                <p className="text-lg font-bold text-green-700">{s.value}</p>
+                              <div key={s.label} style={{ background: "var(--surface)", border: "1px solid var(--border-dim)", borderRadius: "var(--r-md)", padding: "14px 10px", textAlign: "center" }}>
+                                <p style={{ fontSize: 11, color: "var(--text-dim)", margin: "0 0 4px", fontWeight: 500 }}>{s.label}</p>
+                                <p style={{ fontSize: 18, fontWeight: 800, color: s.color, margin: 0 }}>{s.value}</p>
                               </div>
                             ))}
                           </div>
                         );
                       })()}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* ── TAB: Analysis Details ── */}
+            {/* TAB: Analysis Details */}
             {activeTab === "details" && (
-              <div className="space-y-5">
-                {/* Conditions that influenced the recommendation */}
-                <Card className="border border-gray-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-gray-800 text-base">🔍 Conditions Considered</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 text-sm mb-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        weather === "heavy-rain" ? "bg-blue-100 text-blue-800" :
-                        weather === "light-rain" ? "bg-sky-100 text-sky-800" :
-                        "bg-green-100 text-green-800"
-                      }`}>
-                        {weather === "heavy-rain" ? "🌧️ Heavy Rain" : weather === "light-rain" ? "🌦️ Light Rain" : "☀️ Normal Weather"}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        traffic === "heavy" ? "bg-orange-100 text-orange-800" : "bg-green-100 text-green-800"
-                      }`}>
-                        {traffic === "heavy" ? "🚦 Heavy Traffic" : "🟢 Normal Traffic"}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        flooding === "reported" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-                      }`}>
-                        {flooding === "reported" ? "🌊 Flooding Reported" : "✅ No Flooding"}
-                      </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                        📏 {distance} km
-                      </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                        🎯 Max {maxTravelMinutes} min
-                      </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                        🚶 Max {maxWalkingMinutes} min walking
-                      </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {sustainabilityPref === "eco-priority" ? "🌱 Eco-first" : sustainabilityPref === "time-priority" ? "⚡ Time-first" : "⚖️ Balanced"}
-                      </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={card}>
+                  <div style={{ padding: "20px 24px" }}>
+                    <p style={sec}><span>🔍</span> Conditions Considered</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[
+                        weather === "heavy-rain" ? pill("var(--blue-50)", "var(--blue-700)", "var(--blue-200)") : weather === "light-rain" ? pill("#f0f9ff", "#0369a1", "#bae6fd") : pill("var(--green-50)", "var(--green-700)", "var(--green-100)"),
+                        traffic === "heavy" ? pill("#fff7ed", "#c2410c", "#fed7aa") : pill("var(--green-50)", "var(--green-700)", "var(--green-100)"),
+                        flooding === "reported" ? pill("var(--red-50)", "var(--red-700)", "var(--red-200)") : pill("var(--green-50)", "var(--green-700)", "var(--green-100)"),
+                        pill("var(--surface-alt)", "var(--text-muted)", "var(--border)"),
+                        pill("#faf5ff", "#6d28d9", "#ddd6fe"),
+                        pill("#faf5ff", "#6d28d9", "#ddd6fe"),
+                        pill("var(--green-50)", "var(--green-700)", "var(--green-100)"),
+                      ].map((style, i) => {
+                        const labels = [
+                          weather === "heavy-rain" ? "🌧️ Heavy Rain" : weather === "light-rain" ? "🌦️ Light Rain" : "☀️ Normal Weather",
+                          traffic === "heavy" ? "🚦 Heavy Traffic" : "🟢 Normal Traffic",
+                          flooding === "reported" ? "🌊 Flooding Reported" : "✅ No Flooding",
+                          `📏 ${distance} km`, `🎯 Max ${maxTravelMinutes} min`, `🚶 Max ${maxWalkingMinutes} min walking`,
+                          sustainabilityPref === "eco-priority" ? "🌱 Eco-first" : sustainabilityPref === "time-priority" ? "⚡ Time-first" : "⚖️ Balanced",
+                        ];
+                        return <span key={i} style={style}>{labels[i]}</span>;
+                      })}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                {/* Full modes comparison table */}
-                <Card className="border border-green-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-green-800">📊 Detailed Scoring Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">Mode</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">Score</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">Est. time</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">CO₂/week</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">CO₂/year</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">vs. Driving</th>
-                            <th className="text-left py-3 px-2 font-medium text-gray-600">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {plan.modes.sort((a, b) => b.score - a.score).map((m) => (
-                            <tr key={m.key} className={`border-b border-gray-100 ${m.key === plan.recommended.key ? "bg-green-50" : ""}`}>
-                              <td className="py-3 px-2">
-                                <div className="flex items-center gap-2">
-                                  <span>{m.emoji}</span>
-                                  <span className={m.key === plan.recommended.key ? "font-bold text-green-700" : ""}>{m.label}</span>
-                                  {m.key === plan.recommended.key && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Best fit</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2">
-                                {m.eligible ? <ScoreDot score={m.score} /> : <span className="text-gray-400 text-xs">—</span>}
-                              </td>
-                              <td className="py-3 px-2">
-                                <span className={`text-xs ${!m.withinTimeLimit && m.eligible ? "text-orange-600 font-medium" : ""}`}>
-                                  {m.eligible ? `~${m.estimatedMinutes} min` : "—"}
-                                </span>
-                              </td>
-                              <td className="py-3 px-2">
-                                <span className={!m.eligible ? "text-gray-300 line-through" : ""}>{m.co2Weekly.toLocaleString()}g</span>
-                              </td>
-                              <td className="py-3 px-2">
-                                <span className={!m.eligible ? "text-gray-300 line-through" : ""}>{m.co2Annual} kg</span>
-                              </td>
-                              <td className="py-3 px-2">
-                                {m.key === "solo-car" ? (
-                                  <span className="text-gray-400 text-xs">baseline</span>
-                                ) : m.eligible ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                      <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${m.savingsPct}%` }} />
-                                    </div>
-                                    <span className="text-green-700 text-xs font-medium">{m.savingsPct}%</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 px-2">
-                                {!m.eligible ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{m.safetyNote}</span>
-                                ) : m.warnings.length > 0 ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{m.warnings[0]}</span>
-                                ) : (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✅ Viable</span>
-                                )}
-                              </td>
-                            </tr>
+                <div style={card}>
+                  <div style={{ padding: "20px 24px 0" }}><p style={sec}><span>📊</span> Detailed Scoring Breakdown</p></div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border-dim)" }}>
+                          {["Mode", "Score", "Est. time", "CO₂/week", "CO₂/year", "vs. Driving", "Status"].map(h => (
+                            <th key={h} style={{ textAlign: "left", padding: "10px 16px", fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "var(--text-dim)", whiteSpace: "nowrap" }}>{h}</th>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-3">* CO₂ estimates based on IPCC AR6 / IEA 2023 data. Score: 100 = ideal, 0 = excluded. All figures are indicative.</p>
-
-                    {/* Score breakdown for recommended */}
-                    <div className="mt-4 bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-600 mb-2">Score breakdown — {plan.recommended.label}:</p>
-                      <ul className="text-xs text-gray-500 space-y-0.5">
-                        <li>Base score: 100</li>
-                        {plan.recommended.scoreBreakdown.map((b) => (
-                          <li key={b}>{b}</li>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plan.modes.sort((a, b) => b.score - a.score).map((m) => (
+                          <tr key={m.key} style={{ borderBottom: "1px solid var(--border-dim)", background: m.key === plan.recommended.key ? "var(--green-50)" : "transparent" }}>
+                            <td style={{ padding: "12px 16px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 17 }}>{m.emoji}</span>
+                                <span style={{ fontWeight: m.key === plan.recommended.key ? 700 : 500, color: m.key === plan.recommended.key ? "var(--green-700)" : "var(--text)" }}>{m.label}</span>
+                                {m.key === plan.recommended.key && <span style={{ padding: "2px 8px", borderRadius: "var(--r-full)", fontSize: 10, fontWeight: 700, background: "var(--green-500)", color: "#fff" }}>Best fit</span>}
+                              </div>
+                            </td>
+                            <td style={{ padding: "12px 16px" }}>{m.eligible ? <ScoreDot score={m.score} /> : <span style={{ color: "var(--text-dim)", fontSize: 12 }}>—</span>}</td>
+                            <td style={{ padding: "12px 16px", fontSize: 12, color: !m.withinTimeLimit && m.eligible ? "#c2410c" : "var(--text)" }}>{m.eligible ? `~${m.estimatedMinutes} min` : "—"}</td>
+                            <td style={{ padding: "12px 16px", color: !m.eligible ? "var(--border)" : "var(--text)", textDecoration: !m.eligible ? "line-through" : "none" }}>{m.co2Weekly.toLocaleString()}g</td>
+                            <td style={{ padding: "12px 16px", color: !m.eligible ? "var(--border)" : "var(--text)", textDecoration: !m.eligible ? "line-through" : "none" }}>{m.co2Annual} kg</td>
+                            <td style={{ padding: "12px 16px" }}>
+                              {m.key === "solo-car" ? <span style={{ fontSize: 11, color: "var(--text-dim)" }}>baseline</span>
+                                : m.eligible ? <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div style={{ width: 64, height: 5, background: "var(--border)", borderRadius: 3 }}>
+                                      <div style={{ width: `${m.savingsPct}%`, height: "100%", borderRadius: 3, background: "linear-gradient(to right, var(--green-400), var(--green-600))" }} />
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--green-600)" }}>{m.savingsPct}%</span>
+                                  </div>
+                                : <span style={{ fontSize: 11, color: "var(--text-dim)" }}>—</span>}
+                            </td>
+                            <td style={{ padding: "12px 16px" }}>
+                              {!m.eligible ? <span style={{ ...pill("var(--red-50)", "var(--red-700)", "var(--red-200)"), fontSize: 11 }}>{m.safetyNote}</span>
+                                : m.warnings.length > 0 ? <span style={{ ...pill("var(--amber-50)", "var(--amber-700)", "var(--amber-200)"), fontSize: 11 }}>{m.warnings[0]}</span>
+                                : <span style={{ ...pill("var(--green-50)", "var(--green-700)", "var(--green-100)"), fontSize: 11 }}>✅ Viable</span>}
+                            </td>
+                          </tr>
                         ))}
-                        <li className="font-semibold text-green-700">Final score: {plan.recommended.score}</li>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ padding: "10px 16px 16px" }}>
+                    <p style={{ fontSize: 11, color: "var(--text-dim)", margin: "0 0 12px" }}>* CO₂ estimates based on IPCC AR6 / IEA 2023 data. Score: 100 = ideal, 0 = excluded. All figures are indicative.</p>
+                    <div style={{ background: "var(--surface-alt)", borderRadius: "var(--r-md)", padding: "14px 16px", border: "1px solid var(--border-dim)" }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", margin: "0 0 8px" }}>Score breakdown — {plan.recommended.label}:</p>
+                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 3 }}>
+                        <li style={{ fontSize: 12, color: "var(--text-dim)" }}>Base score: 100</li>
+                        {plan.recommended.scoreBreakdown.map((b) => <li key={b} style={{ fontSize: 12, color: "var(--text-dim)" }}>{b}</li>)}
+                        <li style={{ fontSize: 12, fontWeight: 700, color: "var(--green-600)" }}>Final score: {plan.recommended.score}</li>
                       </ul>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                {/* CO₂ comparison solo vs recommended */}
-                <Card className="border border-green-200 bg-emerald-50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-green-800">🌍 CO₂ Impact (Indicative Estimates)</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div style={{ ...card, background: "linear-gradient(to bottom right, var(--green-50), var(--surface))" }}>
+                  <div style={{ padding: "20px 24px" }}>
+                    <p style={sec}><span>🌍</span> CO₂ Impact (Indicative Estimates)</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                       {[
-                        { label: "🚗 Solo driving",         value: `${plan.soloCarCo2Weekly.toLocaleString()}g/wk`, sub: `${plan.soloCarCo2Annual} kg/yr`, color: "bg-red-50 border-red-200" },
-                        { label: `${plan.recommended.emoji} ${plan.recommended.label}`, value: `${plan.recommended.co2Weekly.toLocaleString()}g/wk`, sub: `${plan.recommended.co2Annual} kg/yr`, color: "bg-green-50 border-green-200" },
-                        { label: "💚 Estimated saving",     value: `${Math.max(0, plan.soloCarCo2Weekly - plan.recommended.co2Weekly).toLocaleString()}g/wk`, sub: `${Math.max(0, plan.soloCarCo2Annual - plan.recommended.co2Annual)} kg/yr`, color: "bg-blue-50 border-blue-200" },
+                        { label: "🚗 Solo driving",         value: `${plan.soloCarCo2Weekly.toLocaleString()}g/wk`, sub: `${plan.soloCarCo2Annual} kg/yr`, accent: "var(--red-700)", bg: "var(--red-50)", border: "var(--red-200)" },
+                        { label: `${plan.recommended.emoji} ${plan.recommended.label}`, value: `${plan.recommended.co2Weekly.toLocaleString()}g/wk`, sub: `${plan.recommended.co2Annual} kg/yr`, accent: "var(--green-600)", bg: "var(--green-50)", border: "var(--green-100)" },
+                        { label: "💚 Estimated saving",     value: `${Math.max(0, plan.soloCarCo2Weekly - plan.recommended.co2Weekly).toLocaleString()}g/wk`, sub: `${Math.max(0, plan.soloCarCo2Annual - plan.recommended.co2Annual)} kg/yr`, accent: "var(--teal)", bg: "var(--teal-light)", border: "#99f6e4" },
                       ].map((s) => (
-                        <div key={s.label} className={`rounded-xl p-4 border text-center ${s.color}`}>
-                          <p className="text-xs font-medium text-gray-600 mb-1">{s.label}</p>
-                          <p className="text-xl font-bold text-gray-800">{s.value}</p>
-                          <p className="text-xs text-gray-500">{s.sub}</p>
+                        <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: "var(--r-lg)", padding: "18px 16px", textAlign: "center" }}>
+                          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", margin: "0 0 6px" }}>{s.label}</p>
+                          <p style={{ fontSize: 22, fontWeight: 800, color: s.accent, margin: "0 0 3px" }}>{s.value}</p>
+                          <p style={{ fontSize: 11, color: "var(--text-dim)", margin: 0 }}>{s.sub}</p>
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400">Sources: IPCC AR6 WG III (2022), IEA Transport Data (2023). All figures are indicative estimates.</p>
-                  </CardContent>
-                </Card>
+                    <p style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 12 }}>Sources: IPCC AR6 WG III (2022), IEA Transport Data (2023). All figures are indicative estimates.</p>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* ── TAB: Enterprise Impact ── */}
+            {/* TAB: Enterprise Impact */}
             {activeTab === "enterprise" && (
-              <div className="space-y-5">
-                <Card className="border border-purple-200 bg-purple-50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-purple-800">🏢 Potential Enterprise Impact</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <p className="text-sm text-gray-600">
-                      This section illustrates how the same individual decision-support logic could scale to a corporate sustainability programme.{" "}
-                      <strong>All figures below are illustrative estimates based on the recommendation above.</strong>{" "}
-                      They are not based on real organisational data.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ ...card, border: "1px solid #ddd6fe" }}>
+                  <div style={{ padding: "15px 24px", borderBottom: "1px solid #ede9fe", background: "linear-gradient(to right, #faf5ff, var(--surface))", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 32, height: 32, borderRadius: "var(--r-sm)", flexShrink: 0, background: "#7c3aed", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🏢</span>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: "#5b21b6" }}>Potential Enterprise Impact</span>
+                  </div>
+                  <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
+                    <p style={{ fontSize: 14, color: "var(--text-muted)", margin: 0 }}>This section illustrates how the same individual decision-support logic could scale to a corporate sustainability programme. <strong>All figures below are illustrative estimates based on the recommendation above.</strong> They are not based on real organisational data.</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Number of commuters: <span className="font-bold text-purple-700">{enterpriseCommuters.toLocaleString()}</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={100} max={10000} step={100}
-                          value={enterpriseCommuters}
-                          onChange={(e) => setEnterpriseCommuters(Number(e.target.value))}
-                          className="w-full accent-purple-600"
-                        />
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                          <span>100</span><span>10,000</span>
-                        </div>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "#6d28d9" }}>Number of commuters: <span style={{ fontWeight: 800 }}>{enterpriseCommuters.toLocaleString()}</span></label>
+                        <input type="range" min={100} max={10000} step={100} value={enterpriseCommuters} onChange={(e) => setEnterpriseCommuters(Number(e.target.value))} style={{ width: "100%", accentColor: "#7c3aed" }} />
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-dim)", marginTop: 3 }}><span>100</span><span>10,000</span></div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Days per week switching: <span className="font-bold text-purple-700">{enterpriseDaysPerWeek}</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={1} max={5} step={1}
-                          value={enterpriseDaysPerWeek}
-                          onChange={(e) => setEnterpriseDaysPerWeek(Number(e.target.value))}
-                          className="w-full accent-purple-600"
-                        />
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                          <span>1 day</span><span>5 days</span>
-                        </div>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const, color: "#6d28d9" }}>Days/week switching: <span style={{ fontWeight: 800 }}>{enterpriseDaysPerWeek}</span></label>
+                        <input type="range" min={1} max={5} step={1} value={enterpriseDaysPerWeek} onChange={(e) => setEnterpriseDaysPerWeek(Number(e.target.value))} style={{ width: "100%", accentColor: "#7c3aed" }} />
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-dim)", marginTop: 3 }}><span>1 day</span><span>5 days</span></div>
                       </div>
                     </div>
-
                     {enterprise && (
                       <>
-                        <div className="bg-white rounded-xl p-4 border border-purple-200 text-sm text-gray-700">
-                          <p className="font-medium text-purple-800 mb-1">📊 Scenario summary:</p>
-                          <p>
-                            If <strong>{enterpriseCommuters.toLocaleString()} employees</strong> switched{" "}
-                            <strong>{enterpriseDaysPerWeek} commute day{enterpriseDaysPerWeek > 1 ? "s" : ""}/week</strong>{" "}
-                            from solo driving to <strong>{plan.recommended.label}</strong>:
-                          </p>
+                        <div style={{ background: "var(--surface-alt)", borderRadius: "var(--r-md)", padding: "14px 16px", border: "1px solid #ede9fe", fontSize: 14, color: "var(--text)" }}>
+                          <p style={{ fontWeight: 600, color: "#5b21b6", margin: "0 0 6px" }}>📊 Scenario summary:</p>
+                          <p style={{ margin: 0 }}>If <strong>{enterpriseCommuters.toLocaleString()} employees</strong> switched <strong>{enterpriseDaysPerWeek} commute day{enterpriseDaysPerWeek > 1 ? "s" : ""}/week</strong> from solo driving to <strong>{plan.recommended.label}</strong>:</p>
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
                           {[
-                            { label: "Estimated annual reduction",  value: `${enterprise.totalAnnual.toLocaleString()} kg CO₂e`, color: "border-green-300 bg-green-50" },
-                            { label: "Monthly reduction",           value: `${enterprise.totalMonthly.toLocaleString()} kg CO₂e`, color: "border-blue-300 bg-blue-50"   },
-                            { label: "Equiv. trees planted/yr",     value: `~${enterprise.treesEquiv.toLocaleString()}`,           color: "border-emerald-300 bg-emerald-50" },
-                            { label: "Equiv. car trips avoided",    value: `~${enterprise.carTripsEquiv.toLocaleString()}`,         color: "border-purple-300 bg-purple-50"  },
+                            { label: "Annual CO₂ reduction",  value: `${enterprise.totalAnnual.toLocaleString()} kg`, accent: "var(--green-600)", bg: "var(--green-50)", border: "var(--green-100)" },
+                            { label: "Monthly reduction",       value: `${enterprise.totalMonthly.toLocaleString()} kg`, accent: "var(--blue-700)", bg: "var(--blue-50)", border: "var(--blue-200)" },
+                            { label: "Equiv. trees / year",     value: `~${enterprise.treesEquiv.toLocaleString()}`,    accent: "var(--teal)",    bg: "var(--teal-light)", border: "#99f6e4" },
+                            { label: "Car trips avoided",       value: `~${enterprise.carTripsEquiv.toLocaleString()}`, accent: "#5b21b6",         bg: "#faf5ff",           border: "#ddd6fe" },
                           ].map((s) => (
-                            <div key={s.label} className={`rounded-xl p-4 border text-center ${s.color}`}>
-                              <p className="text-xs text-gray-500 mb-1">{s.label}</p>
-                              <p className="text-lg font-bold text-gray-800">{s.value}</p>
+                            <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: "var(--r-lg)", padding: "16px 14px", textAlign: "center" }}>
+                              <p style={{ fontSize: 11, color: "var(--text-dim)", margin: "0 0 5px", fontWeight: 500 }}>{s.label}</p>
+                              <p style={{ fontSize: 20, fontWeight: 800, color: s.accent, margin: 0 }}>{s.value}</p>
                             </div>
                           ))}
                         </div>
-
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-xs text-yellow-800">
-                          ⚠️ <strong>Simulated data:</strong> These figures are illustrative estimates derived from the IPCC-based CO₂ savings calculated for the route above. They are intended to demonstrate the concept of scaling individual decision support to enterprise sustainability reporting. Real organisational impact would depend on actual commuter data, route mix, and travel patterns.
-                        </div>
+                        <div style={{ background: "var(--amber-50)", border: "1px solid var(--amber-200)", borderRadius: "var(--r-md)", padding: "12px 16px", fontSize: 12, color: "var(--amber-700)" }}>⚠️ <strong>Simulated data:</strong> These figures are illustrative estimates derived from the IPCC-based CO₂ savings calculated for the route above. They are intended to demonstrate the concept of scaling individual decision support to enterprise sustainability reporting. Real organisational impact would depend on actual commuter data, route mix, and travel patterns.</div>
                       </>
                     )}
-
-                    <div className="border-t border-purple-100 pt-4 space-y-2 text-sm text-gray-600">
-                      <p className="font-semibold text-purple-800">🚀 Potential enterprise applications</p>
-                      <ul className="list-disc list-inside space-y-1 text-xs text-gray-600 ml-2">
-                        <li>Corporate sustainable commuting programmes with personalised recommendations</li>
-                        <li>ESG reporting — quantifying employee commute emissions across locations</li>
-                        <li>Smart-city mobility planning — aggregate demand forecasting for transit investment</li>
-                        <li>Employee transport benefit optimisation — compare shuttle, transit subsidy, and cycling allowances</li>
-                        <li>Carbon credit accounting for employee commute behaviour change</li>
+                    <div style={{ borderTop: "1px solid #ede9fe", paddingTop: 16 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, color: "#5b21b6", marginBottom: 10 }}>🚀 Potential enterprise applications</p>
+                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+                        {["Corporate sustainable commuting programmes with personalised recommendations", "ESG reporting — quantifying employee commute emissions across locations", "Smart-city mobility planning — aggregate demand forecasting for transit investment", "Employee transport benefit optimisation — compare shuttle, transit subsidy, and cycling allowances", "Carbon credit accounting for employee commute behaviour change"].map(li => (
+                          <li key={li} style={{ fontSize: 13, color: "var(--text-muted)", paddingLeft: 16, position: "relative" }}><span style={{ position: "absolute", left: 0, color: "#7c3aed" }}>·</span>{li}</li>
+                        ))}
                       </ul>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                {/* IBM Bob / Technology story */}
-                <Card className="border border-blue-200 bg-blue-50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-blue-800">🤖 Built with IBM Bob</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm text-gray-700">
-                    <p>
-                      This prototype was built using <strong>IBM Bob</strong> as the core development tool — not as a badge, but as an integral part of the design and implementation process.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div style={{ ...card, border: "1px solid var(--blue-200)" }}>
+                  <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--blue-200)", background: "linear-gradient(to right, var(--blue-50), var(--surface))", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 32, height: 32, borderRadius: "var(--r-sm)", flexShrink: 0, background: "var(--blue-700)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</span>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: "var(--blue-700)" }}>Built with IBM Bob</span>
+                  </div>
+                  <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+                    <p style={{ fontSize: 14, color: "var(--text)", margin: 0 }}>This prototype was built using <strong>IBM Bob</strong> as the core development tool — not as a badge, but as an integral part of the design and implementation process.</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
                       {[
-                        { title: "Custom Mode", desc: "A 🌿 Commute Planner mode defines Bob's safety-first transport advisor persona and tool permissions" },
-                        { title: "Skill", desc: "A SKILL.md encodes all domain knowledge — emission factors, scoring rules, condition handling, recommendation logic" },
-                        { title: "Plan Mode", desc: "Used to reason about architecture and scoring priorities before implementation" },
-                        { title: "Agent Mode", desc: "Executed file creation, code implementation, and iterative refinement" },
-                        { title: "Validation", desc: "TEST_SCENARIOS.md was designed with Bob to validate the scoring engine" },
+                        { title: "Custom Mode",   desc: "A 🌿 Commute Planner mode defines Bob's safety-first transport advisor persona and tool permissions" },
+                        { title: "Skill",         desc: "A SKILL.md encodes all domain knowledge — emission factors, scoring rules, condition handling, recommendation logic" },
+                        { title: "Plan Mode",     desc: "Used to reason about architecture and scoring priorities before implementation" },
+                        { title: "Agent Mode",    desc: "Executed file creation, code implementation, and iterative refinement" },
+                        { title: "Validation",    desc: "TEST_SCENARIOS.md was designed with Bob to validate the scoring engine" },
                         { title: "Documentation", desc: "README and all documentation authored in collaboration with Bob" },
                       ].map((f) => (
-                        <div key={f.title} className="bg-white rounded-lg p-3 border border-blue-100">
-                          <p className="font-semibold text-blue-800 mb-0.5">{f.title}</p>
-                          <p className="text-gray-600">{f.desc}</p>
+                        <div key={f.title} style={{ background: "var(--surface-alt)", borderRadius: "var(--r-md)", padding: "12px 14px", border: "1px solid var(--border-dim)" }}>
+                          <p style={{ fontWeight: 700, fontSize: 13, color: "var(--blue-700)", margin: "0 0 4px" }}>{f.title}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{f.desc}</p>
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-500 pt-1">
-                      The application&apos;s scoring engine directly implements the rules defined in the Bob skill — meaning the skill isn&apos;t just documentation, it&apos;s the specification the code was built from.
-                    </p>
-                  </CardContent>
-                </Card>
+                    <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0 }}>The application&apos;s scoring engine directly implements the rules defined in the Bob skill — meaning the skill isn&apos;t just documentation, it&apos;s the specification the code was built from.</p>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Footer */}
-            <div className="text-center text-sm text-gray-400 pb-6 space-y-1">
-              <p>CO₂ estimates based on IPCC AR6 / IEA 2023 Transport Data. All figures are indicative estimates, not real-time data.</p>
-              <p>Built for IBM Bob Mini Hackathon · Powered by <span className="font-medium text-green-600">IBM Bob</span> custom modes &amp; skills</p>
+            <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
+              <p style={{ fontSize: 12, color: "var(--text-dim)", margin: "0 0 4px" }}>CO₂ estimates based on IPCC AR6 / IEA 2023 Transport Data. All figures are indicative estimates, not real-time data.</p>
+              <p style={{ fontSize: 12, color: "var(--text-dim)", margin: 0 }}>Built for IBM Bob Mini Hackathon · Powered by <span style={{ fontWeight: 700, color: "var(--green-500)" }}>IBM Bob</span> custom modes &amp; skills</p>
             </div>
           </div>
         )}
