@@ -357,7 +357,6 @@ function buildPlan(
     tradeOffNotes.push(`Driving is ~${recommended.estimatedMinutes - soloCar.estimatedMinutes} min faster${traffic === "heavy" ? " (in normal conditions)" : ""}, but produces significantly more CO₂.`);
   }
   if (recommended.key !== "cycling" && modes.find(m => m.key === "cycling")?.eligible) {
-    const cycling = modes.find(m => m.key === "cycling")!;
     tradeOffNotes.push(`Cycling has the lowest carbon impact but received a lower score${weather !== "normal" ? " due to weather conditions" : ""}.`);
   }
   if (alternative && recommended.savingsPct - alternative.savingsPct > 30) {
@@ -409,11 +408,17 @@ function calcEnterpriseImpact(
 
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 function ScoreDot({ score }: { score: number }) {
-  const color = score >= 75 ? "bg-green-500" : score >= 50 ? "bg-yellow-400" : "bg-red-400";
+  const col = score >= 75 ? "#2d9e4a" : score >= 50 ? "#d97706" : "#dc2626";
+  const r = 10, circ = 2 * Math.PI * r;
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className={`inline-block w-2.5 h-2.5 rounded-full ${color}`} />
-      <span className="text-xs font-medium text-gray-600">{score}</span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <svg width="28" height="28" viewBox="0 0 28 28" style={{ flexShrink: 0 }}>
+        <circle cx="14" cy="14" r={r} fill="none" stroke="#e5e7eb" strokeWidth="3" />
+        <circle cx="14" cy="14" r={r} fill="none" stroke={col} strokeWidth="3"
+          strokeDasharray={`${(score / 100) * circ} ${circ}`}
+          strokeLinecap="round" transform="rotate(-90 14 14)" />
+        <text x="14" y="18" textAnchor="middle" fontSize="8" fontWeight="700" fill={col}>{score}</text>
+      </svg>
     </span>
   );
 }
@@ -428,21 +433,27 @@ function ConditionSelect<T extends string>({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <div className="flex gap-1 flex-wrap">
+      <label style={{ display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+        {label}
+      </label>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {options.map((o) => (
           <button
             key={o.value}
             type="button"
             onClick={() => onChange(o.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-              value === o.value
-                ? "bg-green-600 text-white border-green-600"
-                : "bg-white text-gray-600 border-gray-300 hover:border-green-400"
-            }`}
-          >
-            {o.label}
-          </button>
+            style={value === o.value ? {
+              background: "var(--green-600)", color: "#fff",
+              border: "1.5px solid var(--green-600)", borderRadius: "var(--r-sm)",
+              padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              transition: "all 0.15s", boxShadow: "0 2px 6px rgba(31,122,55,0.25)",
+            } : {
+              background: "var(--surface)", color: "var(--text-muted)",
+              border: "1.5px solid var(--border)", borderRadius: "var(--r-sm)",
+              padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >{o.label}</button>
         ))}
       </div>
     </div>
@@ -454,12 +465,10 @@ function OptionCard({
   mode,
   isRecommended,
   isAlternative,
-  maxTravelMinutes,
 }: {
   mode: ModeResult;
   isRecommended: boolean;
   isAlternative: boolean;
-  maxTravelMinutes: number;
 }) {
   const borderClass = isRecommended
     ? "border-2 border-green-400 bg-green-50"
@@ -504,33 +513,20 @@ function OptionCard({
       {/* Stats */}
       {mode.eligible ? (
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-            <p className="text-gray-400">Travel time</p>
-            <p className={`font-bold ${mode.withinTimeLimit ? "text-gray-700" : "text-orange-600"}`}>
-              ~{mode.estimatedMinutes} min
-              {!mode.withinTimeLimit && <span className="block text-orange-500 font-normal">over limit</span>}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-            <p className="text-gray-400">CO₂ / trip</p>
-            <p className="font-bold text-green-700">{mode.co2PerTrip}g</p>
-          </div>
-          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-            <p className="text-gray-400">Walking</p>
-            <p className={`font-bold ${mode.withinWalkLimit ? "text-gray-700" : "text-orange-600"}`}>
-              {mode.key === "walking"
-                ? `${mode.estimatedMinutes} min`
-                : mode.walkingMinutes > 0
-                ? `~${mode.walkingMinutes} min`
-                : "Minimal"}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-            <p className="text-gray-400">vs. driving</p>
-            <p className="font-bold text-green-600">
-              {mode.key === "solo-car" ? "baseline" : `${mode.savingsPct}% less`}
-            </p>
-          </div>
+          {[
+            { label: "Travel time", value: `~${mode.estimatedMinutes} min`, warn: !mode.withinTimeLimit },
+            { label: "CO₂ / trip",  value: `${mode.co2PerTrip}g`,          warn: false },
+            { label: "Walking",     value: mode.key === "walking" ? `${mode.estimatedMinutes} min` : mode.walkingMinutes > 0 ? `~${mode.walkingMinutes} min` : "Minimal", warn: !mode.withinWalkLimit },
+            { label: "vs. driving", value: mode.key === "solo-car" ? "baseline" : `${mode.savingsPct}% less`, warn: false },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-lg p-2 text-center border border-gray-100">
+              <p className="text-gray-400 mb-0.5">{s.label}</p>
+              <p className={`font-bold ${s.warn ? "text-orange-600" : isRecommended ? "text-green-700" : "text-gray-700"}`}>
+                {s.value}
+                {s.warn && <span className="block text-orange-500 font-normal text-xs">over limit</span>}
+              </p>
+            </div>
+          ))}
         </div>
       ) : (
         <p className="text-xs text-red-600 bg-red-50 rounded-lg p-2">{mode.safetyNote}</p>
@@ -541,7 +537,7 @@ function OptionCard({
         <div>
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>CO₂ savings vs. driving</span>
-            <span>{co2Bar}%</span>
+            <span className="font-bold text-green-600">{co2Bar}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div
@@ -556,13 +552,6 @@ function OptionCard({
       {mode.warnings.slice(0, 1).map((w) => (
         <p key={w} className="text-xs text-yellow-700 bg-yellow-50 rounded px-2 py-1">{w}</p>
       ))}
-
-      {/* Estimated departure */}
-      {mode.eligible && (
-        <p className="text-xs text-gray-400">
-          ~{mode.estimatedMinutes} min journey (estimated)
-        </p>
-      )}
     </div>
   );
 }
@@ -691,8 +680,8 @@ export default function Home() {
             <LocationPicker
               origin={origin}
               destination={destination}
-              onOriginChange={(label, _latlng) => setOrigin(label)}
-              onDestinationChange={(label, _latlng) => setDestination(label)}
+              onOriginChange={(label) => setOrigin(label)}
+              onDestinationChange={(label) => setDestination(label)}
               onDistanceChange={(km) => setDistance(km)}
             />
 
@@ -908,7 +897,6 @@ export default function Home() {
                         mode={m}
                         isRecommended={m.key === plan.recommended.key}
                         isAlternative={plan.alternative !== null && m.key === plan.alternative.key}
-                        maxTravelMinutes={maxTravelMinutes}
                       />
                     ))}
                   </div>

@@ -46,29 +46,31 @@ interface LocationPickerProps {
 
 // ── Nominatim autocomplete hook ──────────────────────────────────────────────
 function useNominatim(query: string) {
-  const [results, setResults] = useState<NominatimResult[]>([]);
+  const [rawResults, setRawResults] = useState<NominatimResult[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (query.length < 3) {
-      setResults([]);
-      return;
-    }
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (query.length < 3) {
+      // Schedule the clear so it's not a synchronous setState inside the effect body
+      timerRef.current = setTimeout(() => setRawResults([]), 0);
+      return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    }
     timerRef.current = setTimeout(async () => {
       try {
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=my`;
         const res = await fetch(url, { headers: { "Accept-Language": "en" } });
         const data: NominatimResult[] = await res.json();
-        setResults(data);
+        setRawResults(data);
       } catch {
-        setResults([]);
+        setRawResults([]);
       }
     }, 350);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query]);
 
-  return results;
+  // Derive results — clear immediately when query is too short without a state update inside the effect
+  return query.length < 3 ? [] : rawResults;
 }
 
 // ── OSRM road-distance helper ────────────────────────────────────────────────
@@ -193,7 +195,11 @@ export default function LocationPicker({
 
   // Recalculate distance whenever both pins are set
   useEffect(() => {
-    if (!originLatLng || !destinationLatLng) { setDistanceLabel(""); return; }
+    if (!originLatLng || !destinationLatLng) {
+      // Defer so setState is not called synchronously in the effect body
+      const t = setTimeout(() => setDistanceLabel(""), 0);
+      return () => clearTimeout(t);
+    }
     fetchRoadDistance(originLatLng, destinationLatLng).then((km) => {
       const clamped = Math.min(Math.max(Math.round(km), 1), 80);
       onDistanceChange(clamped);
