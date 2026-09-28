@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, TextArea } from "@heroui/react";
+import dynamic from "next/dynamic";
+import { Button, Card, CardContent, CardHeader, CardTitle, TextArea } from "@heroui/react";
+
+const LocationPicker = dynamic(() => import("./components/LocationPicker"), { ssr: false });
 
 // ─── Emission factors (IPCC AR6 / IEA 2023) ────────────────────────────────
 // These are the ONLY place emission factors are defined.
@@ -382,43 +385,22 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-5">
 
-            {/* Origin / Destination */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Origin</label>
-                <Input
-                  placeholder="e.g. TTDI"
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Destination</label>
-                <Input
-                  placeholder="e.g. KL Sentral"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                />
-              </div>
-            </div>
+            {/* Origin / Destination + Map */}
+            <LocationPicker
+              origin={origin}
+              destination={destination}
+              onOriginChange={(label, _latlng) => setOrigin(label)}
+              onDestinationChange={(label, _latlng) => setDestination(label)}
+              onDistanceChange={(km) => setDistance(km)}
+            />
 
-            {/* Distance */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">
-                Distance (one way): <span className="text-green-700 font-bold">{distance} km</span>
-                <span className="text-gray-400 text-xs ml-2">
-                  {distance <= WALKING_MAX_KM ? "— walkable" : distance <= CYCLING_MAX_KM ? "— cycleable" : "— transit/car route"}
-                </span>
-              </p>
-              <input
-                type="range" min={1} max={80} step={1}
-                value={distance}
-                onChange={(e) => setDistance(Number(e.target.value))}
-                className="w-full accent-green-600"
-              />
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>1 km</span><span>80 km</span>
-              </div>
+            {/* Distance (read-only display; set automatically by LocationPicker) */}
+            <div className="flex items-center gap-3 text-sm text-gray-700">
+              <span className="font-medium">Distance (one way):</span>
+              <span className="text-green-700 font-bold">{distance} km</span>
+              <span className="text-gray-400 text-xs">
+                {distance <= WALKING_MAX_KM ? "— walkable" : distance <= CYCLING_MAX_KM ? "— cycleable" : "— transit/car route"}
+              </span>
             </div>
 
             <hr className="border-green-100" />
